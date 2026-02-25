@@ -37,7 +37,7 @@ fun Calculator(
             verticalArrangement = Arrangement.spacedBy(buttonSpacing)
         ) {
             Text(
-                text = state.number1 + (state.operation?.symbol ?: "") + state.number2,
+                text = state.expression,
                 textAlign = TextAlign.End,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -56,20 +56,30 @@ fun Calculator(
                     symbol = "AC",
                     modifier = Modifier
                         .background(LightGray)
-                        .aspectRatio(2f)
-                        .weight(2f),
+                        .aspectRatio(1f)
+                        .weight(1f),
                     onClick = {
                         onAction(CalculatorAction.Clear)
                     }
                 )
                 CalculatorButton(
-                    symbol = "Del",
+                    symbol = "(",
                     modifier = Modifier
                         .background(LightGray)
                         .aspectRatio(1f)
                         .weight(1f),
                     onClick = {
-                        onAction(CalculatorAction.Delete)
+                        onAction(CalculatorAction.Bracket("("))
+                    }
+                )
+                CalculatorButton(
+                    symbol = ")",
+                    modifier = Modifier
+                        .background(LightGray)
+                        .aspectRatio(1f)
+                        .weight(1f),
+                    onClick = {
+                        onAction(CalculatorAction.Bracket(")"))
                     }
                 )
                 CalculatorButton(
@@ -226,8 +236,8 @@ fun Calculator(
                     symbol = "0",
                     modifier = Modifier
                         .background(Color.DarkGray)
-                        .aspectRatio(2f)
-                        .weight(2f),
+                        .aspectRatio(1f)
+                        .weight(1f),
                     onClick = {
                         onAction(CalculatorAction.Number(0))
                     }
@@ -243,9 +253,19 @@ fun Calculator(
                     }
                 )
                 CalculatorButton(
-                    symbol = "=",
+                    symbol = "Del",
                     modifier = Modifier
                         .background(Color.DarkGray)
+                        .aspectRatio(1f)
+                        .weight(1f),
+                    onClick = {
+                        onAction(CalculatorAction.Delete)
+                    }
+                )
+                CalculatorButton(
+                    symbol = "=",
+                    modifier = Modifier
+                        .background(Orange)
                         .aspectRatio(1f)
                         .weight(1f),
                     onClick = {

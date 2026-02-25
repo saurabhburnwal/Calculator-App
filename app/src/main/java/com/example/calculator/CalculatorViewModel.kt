@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.udojava.evalex.Expression
 
 class CalculatorViewModel: ViewModel() {
     var state by mutableStateOf(CalculatorState())
@@ -17,82 +18,79 @@ class CalculatorViewModel: ViewModel() {
             is CalculatorAction.Operation -> enterOperation(action.operation)
             is CalculatorAction.Calculate -> performCalculation()
             is CalculatorAction.Delete -> performDeletion()
+            is CalculatorAction.Bracket -> enterBracket(action.bracket)
         }
     }
 
     private fun performCalculation() {
-        val number1 = state.number1.toDoubleOrNull()
-        val number2 = state.number2.toDoubleOrNull()
-        if (number1 != null && number2 != null) {
-            val result = when (state.operation) {
-                is CalculatorOperation.Add -> number1 + number2
-                is CalculatorOperation.Subtract -> number1 - number2
-                is CalculatorOperation.Multiply -> number1 * number2
-                is CalculatorOperation.Divide -> number1 / number2
-                null -> return
-            }
+        if (state.expression.isBlank()) return
+
+        try {
+            val result = Expression(state.expression.replace("x", "*"))
+                .setPrecision(10)
+                .eval()
+            
             state = state.copy(
-                number1 = result.toString().take(15),
-                number2 = "",
-                operation = null
+                expression = result.toPlainString().take(15)
             )
+        } catch (e: Exception) {
+            // If the expression is incomplete or invalid, we just don't calculate
         }
     }
 
     private fun enterOperation(operation: CalculatorOperation) {
-        if (state.number1.isNotBlank()) {
-            state = state.copy(operation = operation)
+        if (state.expression.isNotBlank() && !isLastCharOperator()) {
+            state = state.copy(
+                expression = state.expression + operation.symbol
+            )
+        } else if (state.expression.isNotBlank() && isLastCharOperator()) {
+            // Replace last operator
+            state = state.copy(
+                expression = state.expression.dropLast(1) + operation.symbol
+            )
         }
     }
 
+    private fun isLastCharOperator(): Boolean {
+        if (state.expression.isEmpty()) return false
+        val lastChar = state.expression.last().toString()
+        return lastChar == "+" || lastChar == "-" || lastChar == "x" || lastChar == "/"
+    }
+
     private fun enterDecimal() {
-        if (state.operation == null && !state.number1.contains(".")
-            && state.number1.isNotBlank()) {
+        // Simple decimal logic: only allow if the last part (current number) doesn't have a decimal
+        val parts = state.expression.split("+", "-", "x", "/", "(", ")")
+        val currentPart = parts.last()
+        
+        if (!currentPart.contains(".") && currentPart.isNotBlank()) {
             state = state.copy(
-                number1 = state.number1 + "."
+                expression = state.expression + "."
             )
-            return
-        }
-        if (!state.number2.contains(".") && state.number2.isNotBlank()) {
-            state = state.copy(
-                number2 = state.number2 + "."
+        } else if (currentPart.isEmpty() && !isLastCharOperator()) {
+             // Handle start with decimal if needed, but usually we want "0."
+             state = state.copy(
+                expression = state.expression + "0."
             )
         }
     }
 
     private fun enterNumber(number: Int) {
-        if (state.operation == null) {
-            if (state.number1.length >= MAX_NUM_LENGTH) {
-               return
-            }
-            state = state.copy(
-                number1 = state.number1 + number
-            )
-            return
-        }
-        if (state.number2.length >= MAX_NUM_LENGTH) {
-            return
-        }
         state = state.copy(
-            number2 = state.number2 + number
+            expression = state.expression + number
+        )
+    }
+
+    private fun enterBracket(bracket: String) {
+        state = state.copy(
+            expression = state.expression + bracket
         )
     }
 
     private fun performDeletion() {
-        when {
-            state.number2.isNotBlank() -> state = state.copy(
-                 number2 = state.number2.dropLast(1)
-            )
-            state.operation != null -> state = state.copy(
-                operation = null
-            )
-            state.number1.isNotBlank() -> state = state.copy(
-                number1 = state.number1.dropLast(1)
+        if (state.expression.isNotBlank()) {
+            state = state.copy(
+                expression = state.expression.dropLast(1)
             )
         }
-    }
-
-    companion object {
-        private const val MAX_NUM_LENGTH = 8
     }
 }
